@@ -13,7 +13,10 @@ def test_health_returns_ok():
 def test_root_contains_docs_link():
     response = client.get("/")
     assert response.status_code == 200
-    assert response.json()["docs"] == "/docs"
+    assert response.headers["content-type"].startswith("text/html")
+    assert "/docs" in response.text
+    assert "bootstrap@5.3.3" in response.text
+    assert "In the Wake of Rhapsody" in response.text
 
 
 def test_version_has_name_and_version():

@@ -1,9 +1,11 @@
 import logging
 import os
+import html
 from contextlib import asynccontextmanager
 from typing import Any
 
 from fastapi import FastAPI, HTTPException, Query, Request
+from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 
 # Настройки можно менять через переменные окружения.
@@ -267,9 +269,115 @@ async def log_requests(request: Request, call_next):
     return response
 
 
-@app.get("/")
+
+@app.get("/", response_class=HTMLResponse)
 def root():
-    return {"message": "Архив медиаарта работает", "docs": "/docs", "projects": "/projects"}
+    cards = []
+
+    for project in PROJECTS:
+        title = project.get("title", "Без названия")
+        year = project.get("year", "")
+        medium = project.get("medium", "")
+        description = project.get("description", "")
+        image_url = project.get("image_url", "")
+        project_id = project.get("id", "")
+
+        cards.append(f"""
+        <div class="col">
+          <article class="card h-100 border-0 shadow-sm">
+            <a href="/projects/{project_id}" class="text-decoration-none">
+              <img src="{image_url}"
+                   class="card-img-top project-cover"
+                   alt="{title}"
+                   loading="lazy">
+            </a>
+            <div class="card-body d-flex flex-column">
+              <div class="text-secondary small mb-2">{year}</div>
+              <h2 class="h5 card-title">{title}</h2>
+              <p class="text-secondary small">{medium}</p>
+              <p class="card-text">{description}</p>
+              <a href="/projects/{project_id}"
+                 class="btn btn-outline-dark mt-auto align-self-start">
+                Подробнее
+              </a>
+            </div>
+          </article>
+        </div>
+        """)
+
+    project_cards = "\n".join(cards)
+
+    return f"""<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Архив медиаарта</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+        rel="stylesheet">
+  <style>
+    body {{
+      background: #f6f5f2;
+      color: #222;
+    }}
+    .site-header {{
+      background: #fff;
+      border-bottom: 1px solid #e5e3df;
+    }}
+    .project-cover {{
+      width: 100%;
+      height: 240px;
+      object-fit: cover;
+      background: #e8e6e1;
+    }}
+    .card {{
+      border-radius: 0.75rem;
+      overflow: hidden;
+    }}
+    .card-text {{
+      display: -webkit-box;
+      -webkit-line-clamp: 5;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }}
+  </style>
+</head>
+<body>
+  <header class="site-header py-4 mb-5">
+    <div class="container">
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+        <a class="navbar-brand fs-4 fw-semibold" href="/">Архив медиаарта</a>
+        <nav class="d-flex gap-3">
+          <a class="link-dark" href="/docs">API документация</a>
+          <a class="link-dark" href="/health">Статус</a>
+        </nav>
+      </div>
+      <p class="text-secondary mt-3 mb-0">
+        Проекты на пересечении искусства, технологий и исследования медиа.
+      </p>
+    </div>
+  </header>
+
+  <main class="container pb-5">
+    <div class="d-flex flex-wrap justify-content-between align-items-end mb-4 gap-2">
+      <div>
+        <p class="text-uppercase small text-secondary mb-2">Каталог проектов</p>
+        <h1 class="display-5">Медиаарт и технологии</h1>
+      </div>
+      <span class="text-secondary">{len(PROJECTS)} проектов</span>
+    </div>
+
+    <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4">
+      {project_cards}
+    </div>
+  </main>
+
+  <footer class="container border-top py-4 text-secondary small">
+    Архив медиаарта · FastAPI · Bootstrap 5.3
+  </footer>
+</body>
+</html>"""
+
 
 
 @app.get("/health")
@@ -300,9 +408,11 @@ def search_projects(tag: str = Query(..., min_length=1, description="Тег дл
 
 @app.get("/projects/{project_id}")
 def get_project(project_id: int):
-    """Вернуть один проект по числовому ID."""
     for project in PROJECTS:
         if project["id"] == project_id:
             return project
-    # Для несуществующего ID возвращаем стандартный HTTP 404.
-    raise HTTPException(status_code=404, detail=f"Проект с ID {project_id} не найден")
+
+    raise HTTPException(
+        status_code=404,
+        detail=f"Проект с ID {project_id} не найден",
+    )
