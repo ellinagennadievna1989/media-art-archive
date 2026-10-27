@@ -282,9 +282,14 @@ def root():
         description = project.get("description", "")
         image_url = project.get("image_url", "")
         project_id = project.get("id", "")
+        tags_text = " ".join(str(tag) for tag in project.get("tags", []))
+        searchable_text = html.escape(
+            " ".join(str(value) for value in [title, year, medium, description, tags_text]).lower(),
+            quote=True,
+        )
 
         cards.append(f"""
-        <div class="col">
+        <div class="col project-item" data-search="{searchable_text}">
           <article class="card h-100 border-0 shadow-sm">
             <a href="/projects/{project_id}/page" class="text-decoration-none">
               <img src="{image_url}"
@@ -368,9 +373,62 @@ def root():
       <span class="text-secondary">{len(PROJECTS)} проектов</span>
     </div>
 
-    <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4">
+    <div class="row mb-4 g-2 align-items-center">
+      <div class="col-12 col-md-8">
+        <label for="project-search" class="form-label">Поиск по проектам</label>
+        <input
+          id="project-search"
+          class="form-control"
+          type="search"
+          placeholder="Название, год, техника, описание или тег…"
+          autocomplete="off"
+          aria-describedby="search-results"
+        >
+      </div>
+      <div class="col-12 col-md-4">
+        <p id="search-results" class="text-secondary mb-0 mt-md-4" aria-live="polite">
+          Показаны все {len(PROJECTS)} проектов
+        </p>
+      </div>
+    </div>
+
+    <div id="projects-grid" class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4">
       {project_cards}
     </div>
+    <p id="no-results" class="text-secondary py-5 text-center" hidden>
+      По вашему запросу ничего не найдено. Попробуйте изменить запрос.
+    </p>
+
+    <script>
+      (() => {{
+        const input = document.getElementById("project-search");
+        const items = Array.from(document.querySelectorAll(".project-item"));
+        const resultLabel = document.getElementById("search-results");
+        const noResults = document.getElementById("no-results");
+
+        function normalize(value) {{
+          return value.toLocaleLowerCase("ru").trim();
+        }}
+
+        function filterProjects() {{
+          const query = normalize(input.value);
+          let visibleCount = 0;
+
+          items.forEach((item) => {{
+            const matches = item.dataset.search.includes(query);
+            item.hidden = !matches;
+            if (matches) visibleCount += 1;
+          }});
+
+          resultLabel.textContent = query
+            ? `Найдено проектов: ${{visibleCount}} из ${{items.length}}`
+            : `Показаны все ${{items.length}} проектов`;
+          noResults.hidden = visibleCount !== 0;
+        }}
+
+        input.addEventListener("input", filterProjects);
+      }})();
+    </script>
   </main>
 
   <footer class="container border-top py-4 text-secondary small">
