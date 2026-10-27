@@ -88,8 +88,8 @@ PROJECTS: list[dict[str, Any]] = [
             "случайность",
             "цифровая-реальность"
         ],
-        "source_url": "https://ellinagennadievna.com/1010",
-        "related_links": [{"label": "Презентация проекта", "url": "https://lolagrhm.wfolio.pro/disk/10-10"}],
+        "source_url": "https://ellinagennadievna.com/1010ru",
+        "related_links": [{"label": "Документация проекта", "url": "https://lolagrhm.wfolio.pro/disk/10-10"}],
         "image_url": "/static/images/project-03.jpg"
     },
     {
@@ -155,6 +155,7 @@ PROJECTS: list[dict[str, Any]] = [
             "инсталляция"
         ],
         "source_url": "https://ellinagennadievna.com/ru-ZONE",
+        "related_links": [{"label": "Видео проекта", "url": "https://youtu.be/gnbCqy6EvW8"}],
         "image_url": "/static/images/project-07.jpg"
     },
     {
@@ -438,11 +439,20 @@ def project_page(project_id: int):
     image_url = project.get("image_url", "")
     venue = project.get("venue", "")
     tags = project.get("tags", [])
+    related_links = project.get("related_links", [])
 
     tags_html = "".join(
-        f'<span class="badge text-bg-light border me-1 mb-1">{tag}</span>'
+        f'<span class="badge text-bg-light border me-1 mb-1">{html.escape(str(tag))}</span>'
         for tag in tags
     )
+    links_html = ""
+    for link in related_links:
+        label = html.escape(str(link.get("label", "Дополнительная ссылка")))
+        url = html.escape(str(link.get("url", "#")), quote=True)
+        links_html += (
+            f'<a class="btn btn-outline-dark me-2 mb-2" href="{url}" '
+            f'target="_blank" rel="noopener noreferrer">{label} ↗</a>'
+        )
 
     return f"""
     <!doctype html>
@@ -474,6 +484,7 @@ def project_page(project_id: int):
                             <p>{description}</p>
                             <p class="text-secondary">{venue}</p>
                             <div class="mt-3">{tags_html}</div>
+                            <div class="mt-4">{links_html}</div>
                         </div>
                     </div>
                 </div>
