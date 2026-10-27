@@ -285,7 +285,7 @@ def root():
         cards.append(f"""
         <div class="col">
           <article class="card h-100 border-0 shadow-sm">
-            <a href="/projects/{project_id}" class="text-decoration-none">
+            <a href="/projects/{project_id}/page" class="text-decoration-none">
               <img src="{image_url}"
                    class="card-img-top project-cover"
                    alt="{title}"
@@ -296,8 +296,8 @@ def root():
               <h2 class="h5 card-title">{title}</h2>
               <p class="text-secondary small">{medium}</p>
               <p class="card-text">{description}</p>
-              <a href="/projects/{project_id}"
-                 class="btn btn-outline-dark mt-auto align-self-start">
+              <a href="/projects/{project_id}/page"
+                   class="btn btn-outline-dark mt-auto align-self-start">
                 Подробнее
               </a>
             </div>
@@ -416,3 +416,69 @@ def get_project(project_id: int):
         status_code=404,
         detail=f"Проект с ID {project_id} не найден",
     )
+
+
+@app.get("/projects/{project_id}/page", response_class=HTMLResponse)
+def project_page(project_id: int):
+    project = next(
+        (p for p in PROJECTS if p["id"] == project_id),
+        None,
+    )
+
+    if project is None:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Проект с ID {project_id} не найден",
+        )
+
+    title = project.get("title", "Без названия")
+    year = project.get("year", "")
+    medium = project.get("medium", "")
+    description = project.get("description", "")
+    image_url = project.get("image_url", "")
+    venue = project.get("venue", "")
+    tags = project.get("tags", [])
+
+    tags_html = "".join(
+        f'<span class="badge text-bg-light border me-1 mb-1">{tag}</span>'
+        for tag in tags
+    )
+
+    return f"""
+    <!doctype html>
+    <html lang="ru">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>{title} — Архив медиаарта</title>
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+              rel="stylesheet">
+    </head>
+    <body class="bg-light">
+        <main class="container py-5">
+            <a href="/" class="btn btn-outline-dark mb-4">
+                ← Назад к каталогу
+            </a>
+            <article class="card border-0 shadow-sm overflow-hidden">
+                <div class="row g-0">
+                    <div class="col-lg-7">
+                        <img src="{image_url}"
+                             class="img-fluid w-100 h-100"
+                             style="object-fit: cover; min-height: 300px;"
+                             alt="{title}">
+                    </div>
+                    <div class="col-lg-5">
+                        <div class="card-body p-4 p-lg-5">
+                            <p class="text-secondary">{year} · {medium}</p>
+                            <h1 class="h2 mb-3">{title}</h1>
+                            <p>{description}</p>
+                            <p class="text-secondary">{venue}</p>
+                            <div class="mt-3">{tags_html}</div>
+                        </div>
+                    </div>
+                </div>
+            </article>
+        </main>
+    </body>
+    </html>
+    """
