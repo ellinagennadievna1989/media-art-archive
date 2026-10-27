@@ -495,6 +495,35 @@ def project_page(project_id: int):
     medium = project.get("medium", "")
     description = project.get("description", "")
     image_url = project.get("image_url", "")
+    gallery = project.get("gallery", [])
+
+    gallery_html = ""
+    if len(gallery) > 1:
+        gallery_items = ""
+
+        for image in gallery:
+            gallery_items += f"""
+                <div class="col-6 col-md-3">
+                    <a href="{image}" target="_blank" rel="noopener noreferrer">
+                        <img
+                            src="{image}"
+                            class="img-fluid rounded shadow-sm"
+                            alt="{title}"
+                            loading="lazy"
+                            style="width: 100%; height: 180px; object-fit: cover;"
+                        >
+                    </a>
+                </div>
+            """
+
+        gallery_html = f"""
+            <section class="mt-4" aria-label="Галерея проекта">
+                <h2 class="h4 mb-3">Галерея</h2>
+                <div class="row g-3">
+                    {gallery_items}
+                </div>
+            </section>
+        """
     venue = project.get("venue", "")
     tags = project.get("tags", [])
     related_links = project.get("related_links", [])
@@ -547,6 +576,9 @@ def project_page(project_id: int):
                     </div>
                 </div>
             </article>
+
+            {gallery_html}
+
         </main>
     </body>
     </html>
